@@ -1,0 +1,44 @@
+ {% load static %}
+<section id="billboard">
+
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12">
+
+                <button class="prev slick-arrow">
+                    <i class="icon icon-arrow-left"></i>
+                </button>
+
+                <div class="main-slider pattern-overlay"
+                    style="max-height: 100vh;">
+
+                    {% for book in top_books %}
+                    {% if book.img %}
+                    <div class="slider-item">
+                        <div class="banner-content">
+                            <h3 class="banner-title">{{ book.title }}</h3>
+                            <p
+                                style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{book.desc }}</p>
+                            <div class="btn-wrap">
+                                <a href="book_info/{{book.id}}" 
+                                    class="btn btn-outline-accent btn-accent-arrow">Read
+                                    More<i class="icon icon-ns-arrow-right"></i></a>
+                            </div>
+                        </div><!--banner-content-->
+                        <img src="{{ book.img }}" style="max-height: 500px;"
+                            alt="banner" class="banner-image">
+                    </div><!--slider-item-->
+                    {% endif %}
+                    {% endfor %}
+
+                </div><!--slider-->
+
+                <button class="next slick-arrow">
+                    <i class="icon icon-arrow-right"></i>
+                </button>
+
+            </div>
+        </div>
+    </div>
+
+</section>

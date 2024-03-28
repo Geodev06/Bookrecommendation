@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        {% load static %}
+        <title>Sign in</title>
+        <meta charset="utf-8">
+        <meta name="viewport"
+            content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+        <link
+            href="https://fonts.googleapis.com/css?family=Lato:300,400,700&display=swap"
+            rel="stylesheet">
+
+        <link rel="stylesheet"
+            href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+
+        <link rel="stylesheet" href="{% static 'auth/css/style.css' %}">
+
+    </head>
+    <body>
+        <section class="ftco-section">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-md-6 text-center mb-5">
+                        <h2 class="heading-section"></h2>
+                    </div>
+                </div>
+                <div class="row justify-content-center">
+                    <div class="col-md-6 col-lg-5">
+                        <div class="login-wrap py-5">
+                            <div
+                                class="img d-flex align-items-center justify-content-center"
+                                style="background-image: url(images/bg.jpg);"></div>
+                            <h3 class="text-center mb-0">Register Form</h3>
+                            <p class="text-center">Sign in by entering the
+                                information below</p>
+                            <form action="{% url 'register' %}" method="post"
+                                class="login-form">
+                                {% csrf_token %}
+                                {% if form.errors %}
+                                <div style="color: red;">
+                                    {% for field, errors in form.errors.items %}
+                                    {% for error in errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <div class="form-group">
+                                            <div
+                                                class="icon d-flex align-items-center justify-content-center"><span
+                                                    class="fa fa-user"></span></div>
+                                            <input type="text"
+                                                class="form-control"
+                                                name="first_name"
+                                                placeholder="First Name"
+                                                required>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="form-group">
+                                            <div
+                                                class="icon d-flex align-items-center justify-content-center"><span
+                                                    class="fa fa-user"></span></div>
+                                            <input type="text"
+                                                class="form-control"
+                                                name="last_name"
+                                                placeholder="Last Name"
+                                                required>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-lg-12 p-2 d-flex justify-content-around mb-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input"
+                                                type="radio"
+                                                name="sex"
+                                                id="exampleRadios1"
+                                                value="M" checked>
+                                            <label class="form-check-label"
+                                                for="exampleRadios1">
+                                                Male
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input"
+                                                type="radio"
+                                                name="sex"
+                                                id="exampleRadios2"
+                                                value="F">
+                                            <label class="form-check-label"
+                                                for="exampleRadios2">
+                                                Female
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input"
+                                                type="radio"
+                                                name="sex"
+                                                id="exampleRadios3"
+                                                value="O" >
+                                            <label class="form-check-label"
+                                                for="exampleRadios3">
+                                               Other
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <div
+                                        class="icon d-flex align-items-center justify-content-center"><span
+                                            class="fa fa-user"></span></div>
+                                    <input type="text" class="form-control"
+                                        placeholder="Username" name="username"
+                                        required>
+                                </div>
+                                <div class="form-group">
+                                    <div
+                                        class="icon d-flex align-items-center justify-content-center"><span
+                                            class="fa fa-lock"></span></div>
+                                    <input type="password" class="form-control"
+                                        placeholder="Password" name="password"
+                                        required>
+                                </div>
+                                <div class="form-group d-md-flex">
+                                    <div class="w-100 text-md-right">
+                                        <a href="#">Forgot Password</a>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <button type="submit"
+                                        class="btn form-control btn-primary rounded submit px-3">Get
+                                        Started</button>
+                                </div>
+                            </form>
+                            <div class="w-100 text-center mt-4 text">
+                                <p class="mb-0">Already have an account?</p>
+                                <a href="{% url 'signin' %}">Sign In</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <script src="{% static 'auth/js/jquery.min.js' %}"></script>
+        <script src="{% static 'auth/js/popper.js' %}"></script>
+        <script src="{% static 'auth/js/bootstrap.min.js' %}"></script>
+        <script src="{% static 'js/main.js' %}"></script>
+
+    </body>
+</html>
