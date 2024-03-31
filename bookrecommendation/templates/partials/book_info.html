@@ -68,14 +68,35 @@
     
                         </div>
                     </div>
-                    
-
                     <a href class="btn btn-dark btn-lg" style="font-size: 18px;">&#8369;
                         {{ book.price }}</a>
                 </div>
 
-                <div class="col-lg-12 mt-5">
+                
+                <div class="col-lg-12 mt-3">
                     <h2>Similar Books</h2>
+                    <div class="row" id="product-container">
+                        {% for book in recommendations %}
+                        {% if book.img %}
+                        <div class="col-md-3">
+                            <div class="product-item">
+                                <figure class="product-style">
+                                    <img src="{{ book.img }}" alt="Books"
+                                        class="product-item">
+                                    <button type="button" class="add-to-cart"
+                                        data-product-tile="add-to-cart"
+                                        data-id="{{ book.id }}"
+                                        data-link="{{ book.link }}">BUY NOW</button>
+                                </figure>
+                                <figcaption>
+                                    <h3>{{ book.title }}</h3>
+                                    <span>{{ book.author }}</span>
+                                </figcaption>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
                 </div>
 
             </div>
@@ -88,7 +109,19 @@
             crossorigin="anonymous"></script>
         <script src="{% static 'js/plugins.js' %}"></script>
         <script src="{% static 'js/script.js' %}"></script>
-
+        <script>
+            $(document).ready(function(e) {
+                $('#product-container').on('click','.add-to-cart', function(e) {
+                    
+                    var id = this.dataset.id;
+                    var book_link = `/book_info/${id}`;
+                    
+                    // Navigate to the book_info page for the selected book
+                    window.location.assign(book_link);
+        
+                })
+            })
+        </script>
     </body>
 
 </html>
