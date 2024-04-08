@@ -16,13 +16,19 @@ from django.contrib import messages
 from django.http import JsonResponse
 
 
-#BERT
-import re
+#
+
 import torch
 import numpy as np
+import re
+import nltk
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
 import pandas as pd
-from transformers import BertTokenizer, BertModel
+import time
 from sklearn.metrics.pairwise import cosine_similarity
+from torchtext.vocab import FastText
+
 
 # Assuming your Django app name is 'yourapp'
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -107,135 +113,104 @@ def search_items(request):
     # Return the JSON response as an array
     return JsonResponse(serialized_results, safe=False)
 
-class BookRecommendationModel:
-    def __init__(self, model_path, embeddings_path, data_path):
-        self.tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-        self.model = BertModel.from_pretrained('bert-base-uncased')
-        self.model.eval()
-        self.load(model_path, embeddings_path, data_path)
-        self.history_keywords = {}
 
-    def load(self, model_path, embeddings_path, data_path):
-        # Load the model state dict from file
-        self.model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
+#FASTTEXT MODEL
+class BookRecommendationModel:
+    def __init__(self, embeddings_path, data_path, max_keywords=10):
         self.book_embeddings = np.load(embeddings_path)
         self.book_data = pd.read_csv(data_path)
+        self.fasttext = FastText(language='en')  # Load FastText embeddings
+        self.embedding_dim = self.fasttext.dim
+        self.user_search_history = {}  # Dictionary to store user search history with keyword counts
+        self.max_keywords = max_keywords  # Maximum number of keywords to consider in search history
 
     def preprocess_text(self, text):
-        # Implement text preprocessing if needed
-        text = re.sub(r'[^\w\s]', '', text)  # Remove punctuation
-        return text.lower()
+        text = text.lower()
+        text = re.sub(r'[^\w\s]', '', text)
+        tokens = word_tokenize(text)
+        stop_words = set(stopwords.words('english'))
+        tokens = [word for word in tokens if word not in stop_words]
+        return tokens
 
-    def extract_keywords(self, text):
-        # Extract keywords from text
-        tokens = self.tokenizer.tokenize(text)
-        keywords = set()
+    def get_average_embedding(self, tokens):
+        embeddings = []
         for token in tokens:
-            if token in self.tokenizer.vocab:
-                keywords.add(token)
-        return keywords
+            if token in self.fasttext.stoi:
+                embeddings.append(self.fasttext.vectors[self.fasttext.stoi[token]])
+        if embeddings:
+            return np.mean(embeddings, axis=0)
+        else:
+            return np.zeros(self.embedding_dim)
 
-    def recommend_books(self, query, user_history, k=10):
-        # Tokenize the query
-        tokenized_query = self.tokenizer(query, return_tensors='pt', padding=True, truncation=True)
+    def update_search_history(self, search_query):
+        preprocessed_query = self.preprocess_text(search_query)
+        for keyword in preprocessed_query:
+            if keyword in self.user_search_history:
+                self.user_search_history[keyword] += 1
+            else:
+                self.user_search_history[keyword] = 1
+        
+        # Remove older keywords if the total count exceeds the maximum limit
+        if len(self.user_search_history) > self.max_keywords:
+            sorted_keywords = sorted(self.user_search_history.items(), key=lambda x: x[1], reverse=True)
+            self.user_search_history = dict(sorted_keywords[:self.max_keywords])
 
-        # Get embeddings for the query
-        with torch.no_grad():
-            outputs = self.model(**tokenized_query)
-            query_embedding = outputs.last_hidden_state.mean(dim=1).squeeze().numpy()
-
-        # Calculate cosine similarity between the query and book embeddings
-        similarities = cosine_similarity(query_embedding.reshape(1, -1), self.book_embeddings).flatten()
-
-        # Update history_keywords with keywords from the user's history
-        for book in user_history:
-            normalized_book = book.strip().lower()  # Normalize book title
-            if normalized_book not in self.history_keywords:
-                book_description = self.book_data[self.book_data['title'].str.lower() == normalized_book]['desc'].iloc[0]
-                self.history_keywords[normalized_book] = self.extract_keywords(book_description)
-
-        # Calculate historical similarities based on keywords
-        history_similarities = np.zeros(len(self.book_embeddings))
-        for book in user_history:
-            if book.strip().lower() in self.history_keywords:
-                book_keywords = self.history_keywords[book.strip().lower()]
-                for idx, desc in enumerate(self.book_data['desc']):
-                    if any(keyword.lower() in desc.lower() for keyword in book_keywords):
-                        history_similarities[idx] += 1
-
-        # Normalize history similarities
-        if len(user_history) > 0:
-            history_similarities /= len(user_history)
-
-        # Combine similarities from query and user history
-        combined_similarities = 0.5 * similarities + 0.5 * history_similarities
-
-        # Get indices of top k similar books
-        top_indices = combined_similarities.argsort()[-k:][::-1]
-
-        # Extract information for top k books
-        recommendations = []
-        for index in top_indices:
-            title = self.book_data.iloc[index]['title']
-            description = self.book_data.iloc[index]['desc']
-            isbn = self.book_data.iloc[index]['isbn']
-            similarity = combined_similarities[index]
-            recommendations.append((title, description, similarity,isbn))
-
+    def recommend_books(self, query, k=15):
+        # Preprocess the query text
+        preprocessed_query = self.preprocess_text(query)
+        
+        # Combine the preprocessed query with user search history keywords
+        combined_query = preprocessed_query + list(self.user_search_history.keys())
+        
+        # Compute the average embedding for the combined query
+        combined_embedding = self.get_average_embedding(combined_query)
+        
+        # Calculate cosine similarity between the combined query embedding and book embeddings
+        similarities = cosine_similarity(combined_embedding.reshape(1, -1), self.book_embeddings).flatten()
+        
+        # Get the indices of the top k books based on similarity scores
+        top_indices = similarities.argsort()[::-1][:k]
+        
+        # Create a list of recommended books as dictionaries
+        recommendations = [
+            {
+                'title': self.book_data.iloc[i]['title'], 
+                'desc': self.book_data.iloc[i]['desc'], 
+                'isbn': self.book_data.iloc[i]['isbn'], 
+                'similarity_score': similarities[i]
+            } 
+            for i in top_indices
+        ]
+        
         return recommendations
 
+
 def book_info(request, book_id):
-    # Retrieve the book based on book_id or return 404 if not found
+     # Retrieve the book object based on book_id
     book = get_object_or_404(Book, id=book_id)
     
+    embeddings_path = 'bookrecommendation/static/book_recommendation_embeddings.npy'
+    data_path = 'bookrecommendation/static/book_recommendation_data.csv'
+
     # Initialize BookRecommendationModel
-    # Example usage
-    model_path = "bookrecommendation/static/book_recommendation_model.pth"
-    embeddings_path = "bookrecommendation/static/book_recommendation_embeddings.npy"
-    data_path = "bookrecommendation/static/book_recommendation_data.csv"
-    recommendation_model = BookRecommendationModel(model_path, embeddings_path, data_path)
+    recommendation_model = BookRecommendationModel(embeddings_path=embeddings_path, data_path=data_path, max_keywords=15)
     
-    # Get user history (assuming it's a list of book titles)
-    user_history = ['Wild Indiana']  # Replace with actual user history
+  # Search history
+    recommendation_model.update_search_history("Comedy, Batman Joker Spiderman")
+    # Generate book recommendations based on book description
+    recommendations = recommendation_model.recommend_books(query=book.desc, k=15)
     
-    # Generate book recommendations based on the current book's description and user history
-    recommendations = recommendation_model.recommend_books(book.desc, user_history)
+    # Retrieve detailed information for each recommended book
+    detailed_recommendations = []
+    for recommendation in recommendations:
+        isbn = recommendation['isbn']  # Assuming 'isbn' is the key for ISBN in the recommendation
+        
+        # Check if the recommended ISBN is not the same as the current book's ISBN
+        if isbn != book.isbn:
+            recommended_book = Book.objects.filter(isbn=isbn).first()
+            if recommended_book:
+                detailed_recommendations.append(recommended_book)
+    
+    # Render the book information template with the book object and detailed recommendations
+    return render(request, 'partials/book_info.html', {'book': book, 'recommendations': detailed_recommendations})
 
-    # Convert each tuple to a dictionary
-    formatted_recommendations = [
-        {
-            'title': title,
-            'desc': desc,
-            'similarity': similarity,
-            'isbn': isbn
-        }
-        for title, desc, similarity, isbn in recommendations
-    ]
-    # List to store book info
-    recommended_books = []
-
-    # Fetch book info for each ISBN
-    for reco in formatted_recommendations:
-        isbn = reco['isbn']
-        try:
-            cur = Book.objects.get(isbn=isbn)
-            book_info = {
-                'title': cur.title,
-                'author': cur.author,
-                'desc': cur.desc,
-                'isbn': cur.isbn,
-                'img': cur.img,  # Assuming your Book model has an 'img' field
-                'id': cur.id,    # Assuming your Book model has an 'id' field
-                'link': cur.link # Assuming your Book model has a 'link' field
-                # Add other fields as needed
-            }
-            recommended_books.append(book_info)
-        except Book.DoesNotExist:
-            print(f"No book found for ISBN: {isbn}")
-
-    context = {
-        'book': book,  # Assuming you have a 'book' object you want to display details for
-        'recommendations': recommended_books  # Pass recommendations list to the template
-    }
-    # print(recommendations)
-    return render(request, 'partials/book_info.html', context)

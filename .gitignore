@@ -3,3 +3,4 @@ bookrecommendation/static/book_recommendation_data.csv
 bookrecommendation/static/book_recommendation_embeddings.npy
 bookrecommendation/static/book_recommendation_model.pth
 venv/
+.vector_cache

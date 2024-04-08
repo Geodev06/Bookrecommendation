@@ -1,0 +1,1 @@
+pip install django torch numpy pandas transformers scikit-learn
