@@ -130,3 +130,6 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'bookrecommendation.CustomUser'
+
+STRIPE_SECRET_KEY = 'sk_test_51P3bf7P6YN7rVUN56dJoskzm966YNGepATLbXgu919ltnCkJJLN1sQUerO5hSSGbkMt9kkd2Vv0hJ6iGRm9woo0I007pNRnVHH'
+

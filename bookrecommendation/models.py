@@ -52,3 +52,23 @@ class CustomUser(AbstractUser):
 
     def __str__(self):
         return self.username
+
+class Payment(models.Model):
+    user_id = models.PositiveIntegerField(null=False)
+    book_id = models.PositiveIntegerField(null=False)
+    price = models.DecimalField(max_digits=6, decimal_places=2)
+    created_at = models.DateTimeField(default=timezone.now)  # Use timezone.now without parentheses
+
+    class Meta:
+        verbose_name = "Payment"
+        verbose_name_plural = "Payments"
+
+
+class UserBook(models.Model):
+    user_id = models.PositiveIntegerField(null=False)
+    book_id = models.PositiveIntegerField(null=False)
+    created_at = models.DateTimeField(default=timezone.now)  # Use timezone.now without parentheses
+
+    class Meta:
+        verbose_name = "UserBook"
+        verbose_name_plural = "UserBooks"

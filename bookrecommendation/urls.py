@@ -11,6 +11,9 @@ urlpatterns = [
     path('profile/', views.profile, name='profile'),
     path('logout/', views.logout_view, name='logout_view'),
     path('search_items/', views.search_items, name='search_items'),
-    path('book_info/<int:book_id>/', views.book_info, name='book_info')
+    path('book_info/<int:book_id>/', views.book_info, name='book_info'),
+    path('success_payment/<int:book_id>/', views.success_payment, name='success_payment'),
+
+
 
 ]

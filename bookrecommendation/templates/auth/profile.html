@@ -36,21 +36,45 @@
         <div class="container">
             <div class="row mt-4">
 
-               <div class="col-lg-12">
-                {% if user.is_authenticated %}
-                <h1 style="margin: 0;">{{ user.first_name }} {{ user.last_name }}</h1>
-                <h6>
-                    {% if user.sex == 'M' %}
-                    Male
+                <div class="col-lg-12 d-flex justify-content-between align-items-center">
+                    {% if user.is_authenticated %}
+                    <div><h1 style="margin: 0;">{{ user.first_name }} {{ user.last_name }}</h1>
+                        <h6>
+                            {% if user.sex == 'M' %}
+                            Male
+                            {% else %}
+                            Female
+                            {% endif %}
+                        </h6></div>
+                    <a href="{% url 'logout_view' %}" class="btn btn-link">Logout</a>
                     {% else %}
-                    Female
+                    <!-- Code for when user is not authenticated -->
                     {% endif %}
-                </h6>
-                <a href="{% url 'logout_view' %}" class="btn btn-link">Logout</a>
-                {% else %}
-                <!-- Code for when user is not authenticated -->
-                {% endif %}
-               </div>
+                </div>
+
+                <div class="col-lg-12 mb-5">
+                    <hr>
+                    <h2 class="fw-bold">My Books</h2>
+                    <div class="row">
+                        {% for book in my_books %}
+                        {% if book.img %}
+                        <div class="col-md-3">
+                            <div class="product-item">
+                                <figure class="product-style">
+                                    <img src="{{ book.img }}" alt="Books"
+                                        class="product-item">
+                                   
+                                </figure>
+                                <figcaption>
+                                    <h3>{{ book.title }}</h3>
+                                    <span>{{ book.author }}</span>
+                                </figcaption>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
 
             </div>
         </div>

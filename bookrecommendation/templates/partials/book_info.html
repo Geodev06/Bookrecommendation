@@ -68,8 +68,19 @@
     
                         </div>
                     </div>
-                    <a href class="btn btn-dark btn-lg" style="font-size: 18px;">&#8369;
-                        {{ book.price }}</a>
+                    
+
+                    {% if user.is_authenticated %}
+                       
+
+                        {% if not book_exists %}
+
+                        <button id="checkout-button" class="btn btn-dark btn-lg" style="font-size: 18px;">&#8369;
+                            {{ book.price }}
+                        </button>           
+                                
+                        {% endif %}
+                    {% endif %}
                 </div>
 
                 
@@ -83,10 +94,25 @@
                                 <figure class="product-style">
                                     <img src="{{ book.img }}" alt="Books"
                                         class="product-item">
+                                   
+
+                                    {% if user.is_authenticated %}
+                                       
+
                                     <button type="button" class="add-to-cart"
                                         data-product-tile="add-to-cart"
                                         data-id="{{ book.id }}"
-                                        data-link="{{ book.link }}">BUY NOW</button>
+                                        data-link="{{ book.link }}" >BUY NOW
+                                        </button>
+                                  
+
+                                    {% else %}
+                                    <button type="button" class="add-to-cart"
+                                            data-product-tile="add-to-cart"
+                                            data-id="{{ book.id }}"
+                                            data-link="{{ book.link }}" >VIEW INFO
+                                        </button>
+                                    {% endif %}
                                 </figure>
                                 <figcaption>
                                     <h3>{{ book.title }}</h3>
@@ -101,6 +127,20 @@
 
             </div>
         </div>
+
+        <script src="https://js.stripe.com/v3/"></script>
+    
+        <script>
+            var stripe = Stripe('pk_test_51P3bf7P6YN7rVUN5j5AM2WFlIsrzawmJN6Bbrw3Ww8XjpiqeYvsBiJSmVKW8Mm9rWIYDwC17QMWPHhQlxUJtoZL800Yegtk4bn');  // Replace with your Stripe public key
+    
+            document.getElementById('checkout-button').addEventListener('click', function() {
+                stripe.redirectToCheckout({
+                    sessionId: '{{ context.session_id }}'
+                }).then(function(result) {
+                    // Handle any errors
+                });
+            });
+        </script>
 
         <script src="{% static 'js/jquery-1.11.0.min.js' %}"></script>
         <script
