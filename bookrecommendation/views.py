@@ -90,6 +90,8 @@ def index(request):
     ).order_by('-avg_rating', '-total_reviews')[:6]
 
     recommended_books = []
+    popular_books = Book.objects.order_by('-totalratings')[:10]
+
 
     if request.user.is_authenticated:
         embeddings_path = 'bookrecommendation/static/book_recommendation_embeddings.npy'
@@ -123,7 +125,7 @@ def index(request):
         # Exclude books with ISBNs that exist in my_books
         recommended_books = Book.objects.filter(isbn__in=isbn_list).exclude(id__in=my_books.values_list('id', flat=True))
 
-    return render(request, 'index.html', {'selected_books': random_books, 'top_books': top_books, 'recommended_books': recommended_books})
+    return render(request, 'index.html', {'selected_books': random_books, 'top_books': top_books, 'recommended_books': recommended_books,'popular_books':popular_books})
 
 
 

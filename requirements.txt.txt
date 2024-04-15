@@ -1,1 +1,1 @@
-pip install django torch numpy pandas transformers scikit-learn
+pip install django numpy nltk pandas scikit-learn torchtext stripe

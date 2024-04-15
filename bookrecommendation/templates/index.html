@@ -48,7 +48,9 @@
 
         {% include 'partials/featured.html' %}
 
-        {% include 'partials/bestselling.html' %}
+        {% include 'partials/popular.html' %}
+
+
 
         <section id="quotation" class="align-center pb-5 mb-5 mt-5">
             <div class="inner-content">
@@ -128,6 +130,16 @@
                 })
 
                 $('#reco-product-container').on('click','.add-to-cart', function(e) {
+                    
+                    var link = this.dataset.link;
+                    var id = this.dataset.id;
+                    var book_link = `book_info/${id}`;
+                    // alert(book_link)
+                    window.location.href = book_link;
+
+                })
+
+                $('#popular-product-container').on('click','.add-to-cart', function(e) {
                     
                     var link = this.dataset.link;
                     var id = this.dataset.id;
