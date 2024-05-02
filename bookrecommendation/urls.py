@@ -15,5 +15,13 @@ urlpatterns = [
     path('success_payment/<int:book_id>/', views.success_payment, name='success_payment'),
 
 
+    path('get_users/', views.get_users, name='get_users'),
+    path('get_user_payments/', views.get_user_payments, name='get_user_payments'),
+    path('get_recommendation_index/', views.get_recommendation_index, name='get_recommendation_index'),
+    path('togglestatus/<int:user_id>/', views.togglestatus, name='togglestatus'),
+
+
+
+
 
 ]

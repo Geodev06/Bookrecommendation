@@ -26,7 +26,19 @@
         <link rel="stylesheet" type="text/css"
             href="{% static 'css/vendor.css' %}">
         <link rel="stylesheet" type="text/css" href="{% static 'style.css' %}">
+        <style>
+            .btn-view {
+                background-color: bisque;
+                padding: 8px;
+                border-radius: 4px;
+                cursor: pointer;
+            }
+            .btn-view:hover {
+                background-color: rgb(207, 184, 154);
+            }
+        </style>
 
+   
     </head>
 
     <body data-bs-spy="scroll" data-bs-target="#header" tabindex="0">
@@ -52,6 +64,153 @@
                     {% endif %}
                 </div>
 
+               {% if user.is_superuser %}
+                <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+                <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css">
+                <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+                <div class="col-lg-12 mb-5">
+                    <hr>
+                    <h2 class="fw-bold">Registered Users</h2>
+                
+                    <table id="table_users" class="table table-striped">
+                        <!-- Table headers will be populated dynamically -->
+                        <thead>
+                            <th>FirstName</th>
+                            <th>Lastname</th>
+                            <th>Username</th>
+                            <th>Joined</th>
+                            
+                            <th>Last Login</th>
+                            <th>Action</th>
+
+                        </thead>
+                        <!-- Table body will be populated dynamically -->
+                        <tbody></tbody>
+                    </table>
+                </div>
+
+                <div class="col-lg-12 mb-5">
+                    <hr>
+                    <h2 class="fw-bold">Customer Payments</h2>
+                
+                    <table id="table_payments" class="table table-striped">
+                        <!-- Table headers will be populated dynamically -->
+                        <thead>
+                            <th>Payment ID</th>
+                            <th>Userrname</th>
+                            <th>Book Title</th>
+                            <th>Price</th>
+                            <th>Paid</th>
+                        </thead>
+                        <!-- Table body will be populated dynamically -->
+                        <tbody></tbody>
+                    </table>
+                </div>
+                
+                {% csrf_token %}
+                <script>
+                    $(document).ready(function() {
+                        // Ensure DataTables library is properly initialized
+                        let tbl =  new DataTable('#table_users');
+                        let tbl2 =  new DataTable('#table_payments');
+
+
+                      
+                        $(document).on('click', '.btn-view', function() {
+                            var userId = $(this).data('id');
+                            var toggleurl = "/togglestatus/" + userId + "/";
+                            var token = $('input[name="csrfmiddlewaretoken"]').val();
+
+                            $.ajax({
+                                url: toggleurl,
+                                method: 'POST',
+                                headers: {
+                                    "X-CSRFToken": token
+                                },
+                                data: {
+                                },
+                                success: function(data) {
+                                    // Handle success response
+
+                                    window.location.reload()
+                                },
+                                error: function(xhr, status, error) {
+                                    console.error("Error fetching data:", error);
+                                }
+                            });
+                        });
+                
+                        // Fetch data using AJAX
+                        const url_p = "{% url 'get_users'%}"
+                        $.ajax({
+                            url: url_p, // Assuming this URL is correct
+                            method: 'GET',
+                            success: function(data) {
+                                // Clear existing rows
+                                var users = JSON.parse(data);
+                
+                                tbl.clear();
+                
+                                // Add new rows
+
+
+                                users.forEach(function(user) {
+                                    // Convert date_joined and last_login to "M d YYYY" format
+                                    var dateJoined = new Date(user.fields.date_joined);
+                                    var lastLogin = new Date(user.fields.last_login);
+                                    
+                                    var formattedDateJoined = dateJoined.toLocaleString('default', { month: 'short', day: 'numeric', year: 'numeric' });
+                                    var formattedLastLogin = lastLogin.toLocaleString('default', { month: 'short', day: 'numeric', year: 'numeric' });
+
+                                    var btn = '<span class="btn-view" data-id="' + user.pk + '">' + (user.fields.is_active == 1 ? "Disable" : "Enable") + '</span>';
+
+                                    tbl.row.add([
+                                        user.fields.first_name,
+                                        user.fields.last_name,
+                                        user.fields.username,
+                                        formattedDateJoined,
+                                        formattedLastLogin,
+                                        btn
+                                    ]).draw();
+                                });
+                            },
+                            error: function(xhr, status, error) {
+                                console.error("Error fetching data:", error);
+                            }
+                        });
+
+                        
+                        
+
+                        const url_payments = "{% url 'get_user_payments'%}"
+                        $.ajax({
+                            url: url_payments, // Assuming this URL is correct
+                            method: 'GET',
+                            success: function(data) {
+                
+                                tbl2.clear();
+                                data.forEach(function(dt) {
+                                    var created = new Date(dt.created_at);
+                                    
+                                    var created_fmt = created.toLocaleString('default', { month: 'short', day: 'numeric', year: 'numeric' });
+                                    
+                                    tbl2.row.add([
+                                        'PYMNT - '+dt.payment_id.toString().padStart(8,'0'),
+                                        dt.username,
+                                        dt.book_title,
+                                        dt.price,
+                                        created_fmt 
+                                    ]).draw();
+                                });
+                            },
+                            error: function(xhr, status, error) {
+                                console.error("Error fetching data:", error);
+                            }
+                        });
+
+                    });
+                </script>
+               {% endif %}
                 <div class="col-lg-12 mb-5">
                     <hr>
                     <h2 class="fw-bold">My Books</h2>

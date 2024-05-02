@@ -2,13 +2,15 @@ from django.shortcuts import render, redirect, get_object_or_404
 import os
 from django.contrib.auth import authenticate, login
 from django.contrib.auth import logout
-from .models import Book, UserBook, Payment
+from .models import Book, UserBook, Payment, CustomUser
 from django.db.models import Avg, Count
 from .forms import UserRegistrationForm
 from django.http import JsonResponse
 import stripe
 from django.urls import reverse
 from django.conf import settings
+
+from django.core.serializers import serialize
 
 #
 import numpy as np
@@ -89,9 +91,16 @@ def index(request):
         total_reviews=Count('reviews')
     ).order_by('-avg_rating', '-total_reviews')[:6]
 
-    recommended_books = []
     popular_books = Book.objects.order_by('-totalratings')[:10]
 
+
+    return render(request, 'index.html', {'selected_books': random_books, 'top_books': top_books,'popular_books':popular_books})
+
+
+
+def get_recommendation_index(request):
+
+    recommended_books = []
 
     if request.user.is_authenticated:
         embeddings_path = 'bookrecommendation/static/book_recommendation_embeddings.npy'
@@ -124,10 +133,61 @@ def index(request):
 
         # Exclude books with ISBNs that exist in my_books
         recommended_books = Book.objects.filter(isbn__in=isbn_list).exclude(id__in=my_books.values_list('id', flat=True))
+    
+    recommended_books2 = serialize('json', recommended_books)
 
-    return render(request, 'index.html', {'selected_books': random_books, 'top_books': top_books, 'recommended_books': recommended_books,'popular_books':popular_books})
+    return JsonResponse(recommended_books2,safe=False)
 
 
+def get_users(request):
+    # Fetch all users from CustomUser model
+    users = CustomUser.objects.filter(is_superuser=0)
+
+    # Serialize user data
+    user_data = serialize('json', users)
+
+    # Return serialized data as JSON response
+    return JsonResponse(user_data, safe=False)
+
+def get_user_payments(request):
+
+  # Initialize an empty list to store the combined data
+    data = []
+
+    # Retrieve all payments from the Payment model
+    payments = Payment.objects.all()
+
+    # Retrieve all users from the CustomUser model
+    users = CustomUser.objects.all()
+
+    # Retrieve all books from the Book model
+    books = Book.objects.all()
+
+    # Loop through each payment
+    for payment in payments:
+        # Retrieve the user associated with the payment
+        user = users.filter(id=payment.user_id).first()
+
+        # Retrieve the book associated with the payment
+        book = books.filter(id=payment.book_id).first()
+
+        # Construct a dictionary with the combined data
+        payment_data = {
+            'payment_id': payment.id,
+            'user_id': user.id,
+            'username': user.username,
+            'email': user.email,
+            'book_id': book.id,
+            'book_title': book.title,
+            'price': payment.price,
+            'created_at' : payment.created_at
+        }
+
+        # Append the dictionary to the data list
+        data.append(payment_data)
+
+    # Return the combined data as a JSON response
+    return JsonResponse(data, safe=False)
 
 def signin(request):
     return render(request, 'auth/signin.html')
@@ -165,7 +225,7 @@ def authenticate_user(request):
         password = request.POST.get('password')
         user = authenticate(request, username=username, password=password)  # Authenticate the user
             
-        if user is not None:
+        if user is not None and user.is_active == 1:
             login(request, user)  # Log the user in
             
             return redirect('/')  # Redirect to the desired page after successful login
@@ -296,3 +356,13 @@ def success_payment(request, book_id):
     return redirect('/profile')  
 
 
+def togglestatus(request, user_id):
+    try:
+        user = CustomUser.objects.get(pk=user_id)
+        
+        user.is_active = not user.is_active
+        user.save()
+        user_data = serialize('json', [user])
+        return JsonResponse(user_data, safe=False)
+    except CustomUser.DoesNotExist:
+        return JsonResponse({'error': 'User not found'}, status=404)
