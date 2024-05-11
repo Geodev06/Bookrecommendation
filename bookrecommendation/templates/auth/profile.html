@@ -98,7 +98,6 @@
                         <thead>
                             <th>Payment ID</th>
                             <th>Userrname</th>
-                            <th>Book Title</th>
                             <th>Price</th>
                             <th>Paid</th>
                         </thead>
@@ -106,7 +105,38 @@
                         <tbody></tbody>
                     </table>
                 </div>
-                
+
+                <!-- Modal -->
+                <div class="modal fade" id="modal-view" aria-labelledby="" aria-hidden="true">
+                    <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                        <h1 class="modal-title fs-5" id="exampleModalLabel">Payment Details</h1>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="row">
+                                <div class="col-lg-4">
+                                    <h6>Book Title</h6>
+                                    <span id="title"></span>
+                                </div>
+                                <div class="col-lg-4">
+                                    <h6>Book Price</h6>
+                                    <span id="price"></span>
+                                </div>
+                                <div class="col-lg-12">
+                                    <h6>Sold</h6>
+                                    <span id="date"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+
                 {% csrf_token %}
                 <script>
                     $(document).ready(function() {
@@ -193,11 +223,11 @@
                                     var created = new Date(dt.created_at);
                                     
                                     var created_fmt = created.toLocaleString('default', { month: 'short', day: 'numeric', year: 'numeric' });
+                                    var span = '<span class="btn-s" data-date="'+created_fmt+'" data-id="' + dt.payment_id + '" data-title="'+dt.book_title+'" data-price="'+dt.price+'" >'+'PYMNT - '+dt.payment_id.toString().padStart(8,'0')+'</span>';
                                     
                                     tbl2.row.add([
-                                        'PYMNT - '+dt.payment_id.toString().padStart(8,'0'),
+                                        span,
                                         dt.username,
-                                        dt.book_title,
                                         dt.price,
                                         created_fmt 
                                     ]).draw();
@@ -208,9 +238,53 @@
                             }
                         });
 
+
+                        $('#table_payments tbody').on('click','td .btn-s', function(e) {
+                            e.preventDefault()
+                            var id = $(this)[0].dataset.id
+                            var title = $(this)[0].dataset.title
+                            var price = $(this)[0].dataset.price
+                            var date = $(this)[0].dataset.date
+
+
+                            $('#title').text(title)
+                            $('#price').text(price)
+                            $('#date').text(date)
+
+
+                            $('#modal-view').modal('show')
+                        
+                        })
+
                     });
                 </script>
                {% endif %}
+
+                {% if user.is_superuser %}
+                <div class="col-lg-12 mb-5">
+                    <hr>
+                    <h2 class="fw-bold">My Books</h2>
+                    <div class="row">
+                        {% for book in superuser_books %}
+                        {% if book.img %}
+                        <div class="col-md-3">
+                            <div class="product-item">
+                                <figure class="product-style">
+                                    <img src="{{ book.img }}" alt="Books"
+                                        class="product-item">
+                                   
+                                </figure>
+                                <figcaption>
+                                    <h3>{{ book.title }}</h3>
+                                    <span>{{ book.author }}</span>
+                                </figcaption>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+                {% else %}
                 <div class="col-lg-12 mb-5">
                     <hr>
                     <h2 class="fw-bold">My Books</h2>
@@ -234,6 +308,7 @@
                         {% endfor %}
                     </div>
                 </div>
+                {% endif %}
 
             </div>
         </div>

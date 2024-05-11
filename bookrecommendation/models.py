@@ -19,6 +19,7 @@ class Book(models.Model):
     title = models.TextField()
     totalratings = models.PositiveIntegerField(null=True)
     price = models.DecimalField(max_digits=6, decimal_places=2, default=Decimal(random.randint(100000, 200000)/100))
+    status = models.TextField(null=True)
     created_at = models.DateTimeField(default=timezone.now)  # Use timezone.now without parentheses
 
     class Meta:
@@ -72,3 +73,13 @@ class UserBook(models.Model):
     class Meta:
         verbose_name = "UserBook"
         verbose_name_plural = "UserBooks"
+
+
+class History(models.Model):
+    user_id = models.PositiveIntegerField(null=False)
+    book_id = models.PositiveIntegerField(null=False)
+    created_at = models.DateTimeField(default=timezone.now)  # Use timezone.now without parentheses
+
+    class Meta:
+        verbose_name = "Histories"
+        verbose_name_plural = "Histories"

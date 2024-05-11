@@ -22,11 +22,19 @@
                                     <img src="{{ book.img }}" alt="Books"
                                         class="product-item">
                                     {% if user.is_authenticated %}
+                                        {% if user.is_superuser %}
+                                        <button type="button" class="add-to-cart"
+                                            data-product-tile="add-to-cart"
+                                            data-id="{{ book.id }}"
+                                            data-link="{{ book.link }}" >ADD TO MY BOOKS
+                                        </button>
+                                        {% else %}
                                         <button type="button" class="add-to-cart"
                                             data-product-tile="add-to-cart"
                                             data-id="{{ book.id }}"
                                             data-link="{{ book.link }}" >BUY NOW
                                         </button>
+                                        {% endif %}
 
                                     {% else %}
                                     <button type="button" class="add-to-cart"

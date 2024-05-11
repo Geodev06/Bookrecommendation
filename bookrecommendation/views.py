@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 import os
 from django.contrib.auth import authenticate, login
 from django.contrib.auth import logout
-from .models import Book, UserBook, Payment, CustomUser
+from .models import Book, UserBook, Payment, CustomUser, History
 from django.db.models import Avg, Count
 from .forms import UserRegistrationForm
 from django.http import JsonResponse
@@ -108,16 +108,25 @@ def get_recommendation_index(request):
 
         user_id = request.user.id
         # Step 1: Retrieve the latest timestamps for the user's books
-        latest_timestamps = list(UserBook.objects.filter(user_id=user_id).order_by('-created_at')[:5].values_list('created_at', flat=True))
+        latest_timestamps = list(UserBook.objects.filter(user_id=user_id).order_by('-created_at')[:3].values_list('created_at', flat=True))
 
         # Step 2: Use the latest timestamps to fetch the corresponding book IDs
         my_book_ids = UserBook.objects.filter(user_id=user_id, created_at__in=latest_timestamps).values_list('book_id', flat=True)
 
 
+        latest_timestamps2 = list(History.objects.filter(user_id=user_id).order_by('-created_at')[:3].values_list('created_at', flat=True))
+        last_3_title_history = History.objects.filter(user_id=user_id, created_at__in=latest_timestamps2).values_list('book_id', flat=True)
+
         # Fetch book titles based on user's book IDs
         book_titles = Book.objects.filter(id__in=my_book_ids).values_list('title', flat=True)
 
-        concatenated_titles = ', '.join(book_titles)
+        history_book_titles =  Book.objects.filter(id__in=last_3_title_history).values_list('title', flat=True)
+
+        all_book_titles = list(book_titles) + list(history_book_titles)
+
+        print(all_book_titles)
+        # Concatenate all titles into a single string
+        concatenated_titles = ', '.join(all_book_titles)
         # Print the concatenated titles
 
         # Initialize BookRecommendationModel
@@ -246,7 +255,10 @@ def profile(request):
         my_books.append(book_data)
 
     my_books.reverse()
-    return render(request, 'auth/profile.html', {'my_books': my_books})
+
+    superuser_books = Book.objects.filter(status='Y') # GET ALL ACTIVE BOOKS ONLY
+
+    return render(request, 'auth/profile.html', {'my_books': my_books, 'superuser_books': superuser_books})
 
 def logout_view(request):
     logout(request)
@@ -273,6 +285,21 @@ def book_info(request, book_id):
      # Retrieve the book object based on book_id
     book = get_object_or_404(Book, id=book_id)
     book_exists = UserBook.objects.filter(book_id=book_id, user_id=request.user.id).exists()
+
+    user_id = request.user.id
+
+    # Retrieve all records matching the criteria
+    records_to_delete = History.objects.filter(user_id=user_id, book_id=book_id)
+
+    # Delete each record
+    for record in records_to_delete:
+        record.delete()
+
+    #insert new
+    History.objects.create(
+        book_id=book_id,
+        user_id=user_id
+    )
 
     embeddings_path = 'bookrecommendation/static/book_recommendation_embeddings.npy'
     data_path = 'bookrecommendation/static/book_recommendation_data.csv'
@@ -357,6 +384,7 @@ def success_payment(request, book_id):
 
 
 def togglestatus(request, user_id):
+
     try:
         user = CustomUser.objects.get(pk=user_id)
         
@@ -366,3 +394,10 @@ def togglestatus(request, user_id):
         return JsonResponse(user_data, safe=False)
     except CustomUser.DoesNotExist:
         return JsonResponse({'error': 'User not found'}, status=404)
+
+def addbook(request, book_id):
+    book = Book.objects.get(id=book_id)
+    book.status = 'Y' if book.status == 'N' else 'N'  # Toggle status between 'Y' and 'N'
+    book.save()
+
+    return redirect('book_info',book_id)

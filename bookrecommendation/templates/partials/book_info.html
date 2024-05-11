@@ -31,6 +31,7 @@
                 max-height: 400px;
                 max-height: 400px;
             }
+           
         </style>
 
     </head>
@@ -71,14 +72,28 @@
                     
 
                     {% if user.is_authenticated %}
-                       
+                        {% if user.is_superuser %}
+                            {% if book.status == 'N' %}
+                            <a href="{% url 'addbook' book.id %}" class="btn btn-primary">ADD NOW </a>
+                            {% else %}
+                            <a href="{% url 'addbook' book.id %}" class="btn btn-primary">REMOVE NOW </a>
+                            {% endif %}
+                        {% else %}
 
-                        {% if not book_exists %}
+                            {% if not book_exists %}
 
-                        <button id="checkout-button" class="btn btn-dark btn-lg" style="font-size: 18px;">&#8369;
-                            {{ book.price }}
-                        </button>           
-                                
+                                {% if book.status == 'Y' %}   
+                                <button id="checkout-button" class="btn btn-dark btn-lg" style="font-size: 18px;">&#8369;
+                                    {{ book.price }}
+                                </button> 
+                                {% else %}
+                                <button id="checkout-button" class="btn btn-dark btn-lg" disabled style="font-size: 18px;">&#8369;
+                                    {{ book.price }} <span class="badge badge-danger">Not available</span>
+                                </button> 
+                                {% endif %}
+                                    
+                            {% endif %}
+
                         {% endif %}
                     {% endif %}
                 </div>
@@ -99,11 +114,20 @@
                                     {% if user.is_authenticated %}
                                        
 
-                                    <button type="button" class="add-to-cart"
+                                        {% if user.is_superuser %}
+                                        <button type="button" class="add-to-cart"
+                                        data-product-tile="add-to-cart"
+                                        data-id="{{ book.id }}"
+                                        data-link="{{ book.link }}" >ADD NOW
+                                        </button>
+                                        {% else %}
+
+                                        <button type="button" class="add-to-cart"
                                         data-product-tile="add-to-cart"
                                         data-id="{{ book.id }}"
                                         data-link="{{ book.link }}" >BUY NOW
                                         </button>
+                                        {% endif %}
                                   
 
                                     {% else %}

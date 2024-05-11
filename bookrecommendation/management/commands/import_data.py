@@ -38,7 +38,8 @@ class Command(BaseCommand):
                     reviews=row[10], 
                     title=row[11], 
                     price=price,  # Set the random price here
-                    totalratings=row[12]
+                    totalratings=row[12],
+                    status='N'
                 )
                 batch.append(obj)
                 
